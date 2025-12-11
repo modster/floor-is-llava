@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import type { PageData } from './$types';
+	
+	export let data: PageData;
 	
 	// State variables
 	let prompt: string = '';
@@ -30,7 +33,7 @@
 			const script = document.createElement('script');
 			script.src = 'https://js.stripe.com/v3/';
 			script.onload = () => {
-				stripe = (window as any).Stripe('pk_test_placeholder'); // This will be replaced with actual key
+				stripe = (window as any).Stripe(data.stripePublishableKey);
 			};
 			document.head.appendChild(script);
 		}

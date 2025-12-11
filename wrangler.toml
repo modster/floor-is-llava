@@ -31,6 +31,7 @@ binding = "IMAGES_BUCKET"
 bucket_name = "guitar-pick-images"
 
 # Bind a KV Namespace for order tracking
+# Replace "placeholder" with actual KV namespace ID from: wrangler kv:namespace create ORDERS_KV
 [[kv_namespaces]]
 binding = "ORDERS_KV"
 id = "placeholder"

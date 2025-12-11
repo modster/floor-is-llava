@@ -32,13 +32,15 @@ wrangler kv:namespace create ORDERS_KV
 wrangler kv:namespace create ORDERS_KV --preview
 ```
 
-After creating the KV namespace, note the `id` that's returned and update `wrangler.toml`:
+**IMPORTANT**: After creating the KV namespace, you MUST update the `id` in `wrangler.toml`:
 
 ```toml
 [[kv_namespaces]]
 binding = "ORDERS_KV"
-id = "your-kv-namespace-id-here"
+id = "your-kv-namespace-id-here"  # Replace this with the actual ID from the command output
 ```
+
+The application will not deploy without a valid KV namespace ID.
 
 ### 2. Configure Stripe
 
