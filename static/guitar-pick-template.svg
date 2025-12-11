@@ -1,0 +1,32 @@
+<svg width="300" height="350" viewBox="0 0 300 350" xmlns="http://www.w3.org/2000/svg">
+  <!-- Guitar pick shape -->
+  <defs>
+    <clipPath id="pickShape">
+      <path d="M 150 10 
+               C 80 10, 30 60, 30 130
+               C 30 200, 80 250, 150 340
+               C 220 250, 270 200, 270 130
+               C 270 60, 220 10, 150 10 Z"
+            fill="white"/>
+    </clipPath>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="300" height="350" fill="#f0f0f0"/>
+  
+  <!-- Guitar pick outline -->
+  <path d="M 150 10 
+           C 80 10, 30 60, 30 130
+           C 30 200, 80 250, 150 340
+           C 220 250, 270 200, 270 130
+           C 270 60, 220 10, 150 10 Z"
+        fill="white" 
+        stroke="#333" 
+        stroke-width="3"/>
+  
+  <!-- Image placeholder (will be replaced by generated image) -->
+  <g clip-path="url(#pickShape)">
+    <circle cx="150" cy="150" r="80" fill="#e0e0e0"/>
+    <text x="150" y="155" text-anchor="middle" font-size="16" fill="#999">Image Here</text>
+  </g>
+</svg>

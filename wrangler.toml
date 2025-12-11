@@ -15,13 +15,25 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 # - https://developers.cloudflare.com/pages/functions/bindings/#environment-variables
 # Note: Use secrets to store sensitive data.
 # - https://developers.cloudflare.com/pages/functions/bindings/#secrets
-# [vars]
-# MY_VARIABLE = "production_value"
+[vars]
+STRIPE_PUBLISHABLE_KEY = "pk_test_placeholder"
+# Set STRIPE_SECRET_KEY as a secret using: wrangler secret put STRIPE_SECRET_KEY
+# Set STRIPE_WEBHOOK_SECRET as a secret using: wrangler secret put STRIPE_WEBHOOK_SECRET
 
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#workers-ai
 [ai]
 binding = "AI"
+
+# Bind an R2 Bucket for storing generated images and guitar picks
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "guitar-pick-images"
+
+# Bind a KV Namespace for order tracking
+[[kv_namespaces]]
+binding = "ORDERS_KV"
+id = "placeholder"
 
 # Bind a D1 database. D1 is Cloudflare’s native serverless SQL database.
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#d1-databases

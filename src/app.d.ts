@@ -3,7 +3,14 @@
 declare global {
 	namespace App {
         interface Platform {
-            env: Env
+            env: {
+                AI: Ai;
+                IMAGES_BUCKET: R2Bucket;
+                ORDERS_KV: KVNamespace;
+                STRIPE_PUBLISHABLE_KEY: string;
+                STRIPE_SECRET_KEY: string;
+                STRIPE_WEBHOOK_SECRET: string;
+            }
             cf: CfProperties
             ctx: ExecutionContext
         }
