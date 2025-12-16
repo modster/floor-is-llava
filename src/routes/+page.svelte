@@ -1,219 +1,406 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	let image: File | null = null;
-	let imageUrl: string | null = null;
-	let question: string = '';
-	let isDragging: boolean = false;
-	let description: string | null = null;
-	let isLoading: boolean = false;
+	import type { PageData } from './$types';
+	
+	export let data: PageData;
+	
+	// State variables
+	let prompt: string = '';
+	let generatedImage: string | null = null;
+	let guitarPickPreview: string | null = null;
+	let imageId: string | null = null;
+	let isGenerating: boolean = false;
+	let isProcessingPayment: boolean = false;
+	let step: 'generate' | 'preview' | 'checkout' | 'complete' = 'generate';
+	
+	// Shipping information
+	let name: string = '';
+	let address: string = '';
+	let city: string = '';
+	let state: string = '';
+	let zip: string = '';
+	let country: string = 'United States';
+	
+	// Stripe
+	let stripe: any = null;
+	let elements: any = null;
+	let cardElement: any = null;
+	let clientSecret: string | null = null;
 
-	const MAX_WIDTH = 800;
-	const MAX_HEIGHT = 800;
-
-	const resizeImage = (file: File): Promise<File> => {
-		return new Promise((resolve) => {
-			const img = new Image();
-			img.src = URL.createObjectURL(file);
-			img.onload = () => {
-				const canvas = document.createElement('canvas');
-				let width = img.width;
-				let height = img.height;
-
-				if (width > height) {
-					if (width > MAX_WIDTH) {
-						height = Math.round((height * MAX_WIDTH) / width);
-						width = MAX_WIDTH;
-					}
-				} else {
-					if (height > MAX_HEIGHT) {
-						width = Math.round((width * MAX_HEIGHT) / height);
-						height = MAX_HEIGHT;
-					}
-				}
-
-				canvas.width = width;
-				canvas.height = height;
-				const ctx = canvas.getContext('2d');
-				ctx.drawImage(img, 0, 0, width, height);
-
-				canvas.toBlob((blob) => {
-					if (blob) {
-						resolve(new File([blob], file.name, { type: file.type }));
-					}
-				}, file.type);
+	onMount(async () => {
+		// Load Stripe
+		if (typeof window !== 'undefined') {
+			const script = document.createElement('script');
+			script.src = 'https://js.stripe.com/v3/';
+			script.onload = () => {
+				stripe = (window as any).Stripe(data.stripePublishableKey);
 			};
-		});
-	};
-
-	const handleFileUpload = async (event: Event) => {
-		const target = event.target as HTMLInputElement;
-		if (target.files && target.files.length > 0) {
-			image = target.files[0];
-			image = await resizeImage(image);
-			imageUrl = URL.createObjectURL(image);
+			document.head.appendChild(script);
 		}
-	};
+	});
 
-	const handleDrop = async (event: DragEvent) => {
-		event.preventDefault();
-		isDragging = false;
-		if (event.dataTransfer && event.dataTransfer.files.length > 0) {
-			image = event.dataTransfer.files[0];
-			image = await resizeImage(image);
-			imageUrl = URL.createObjectURL(image);
-		}
-	};
-
-	const handleDragOver = (event: DragEvent) => {
-		event.preventDefault();
-		isDragging = true;
-	};
-
-	const handleDragLeave = () => {
-		isDragging = false;
-	};
-
-	const handleKeyDown = (event: KeyboardEvent) => {
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault();
-			document.getElementById('file-input')?.click();
-		}
-	};
-
-	const submitForm = async () => {
-		if (!image || !question) {
-			alert('Please upload an image and ask a question.');
+	const generateImage = async () => {
+		if (!prompt) {
+			alert('Please enter a prompt for the image.');
 			return;
 		}
 
-		isLoading = true;
-		const formData = new FormData();
-		formData.append('image', image);
-		formData.append('question', question);
+		isGenerating = true;
+		try {
+			const response = await fetch('/api/generate-image', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ prompt })
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to generate image');
+			}
+
+			const blob = await response.blob();
+			generatedImage = URL.createObjectURL(blob);
+			
+			// Create guitar pick preview
+			await createGuitarPickPreview(blob);
+			
+			step = 'preview';
+		} catch (error) {
+			console.error('Error generating image:', error);
+			alert('Failed to generate image. Please try again.');
+		} finally {
+			isGenerating = false;
+		}
+	};
+
+	const createGuitarPickPreview = async (imageBlob: Blob) => {
+		// Create a canvas to composite the image onto the guitar pick
+		const canvas = document.createElement('canvas');
+		canvas.width = 300;
+		canvas.height = 350;
+		const ctx = canvas.getContext('2d');
+
+		if (!ctx) return;
+
+		// Draw white background
+		ctx.fillStyle = 'white';
+		ctx.fillRect(0, 0, 300, 350);
+
+		// Create guitar pick shape path
+		ctx.beginPath();
+		ctx.moveTo(150, 10);
+		ctx.bezierCurveTo(80, 10, 30, 60, 30, 130);
+		ctx.bezierCurveTo(30, 200, 80, 250, 150, 340);
+		ctx.bezierCurveTo(220, 250, 270, 200, 270, 130);
+		ctx.bezierCurveTo(270, 60, 220, 10, 150, 10);
+		ctx.closePath();
+
+		// Clip to pick shape
+		ctx.save();
+		ctx.clip();
+
+		// Load and draw the generated image
+		const img = new Image();
+		img.src = URL.createObjectURL(imageBlob);
+		await new Promise((resolve) => {
+			img.onload = resolve;
+		});
+
+		// Draw image centered and scaled to fit
+		const size = 160;
+		ctx.drawImage(img, 150 - size/2, 120 - size/2, size, size);
+
+		ctx.restore();
+
+		// Draw pick outline
+		ctx.strokeStyle = '#333';
+		ctx.lineWidth = 3;
+		ctx.beginPath();
+		ctx.moveTo(150, 10);
+		ctx.bezierCurveTo(80, 10, 30, 60, 30, 130);
+		ctx.bezierCurveTo(30, 200, 80, 250, 150, 340);
+		ctx.bezierCurveTo(220, 250, 270, 200, 270, 130);
+		ctx.bezierCurveTo(270, 60, 220, 10, 150, 10);
+		ctx.closePath();
+		ctx.stroke();
+
+		// Convert to blob and upload to server
+		canvas.toBlob(async (blob) => {
+			if (!blob) return;
+			
+			guitarPickPreview = canvas.toDataURL();
+
+			// Upload to server
+			const formData = new FormData();
+			formData.append('image', blob, 'guitar-pick.png');
+
+			try {
+				const response = await fetch('/api/create-guitar-pick', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json() as { imageId: string };
+				imageId = result.imageId;
+			} catch (error) {
+				console.error('Error uploading guitar pick:', error);
+			}
+		}, 'image/png');
+	};
+
+	const proceedToCheckout = async () => {
+		if (!name || !address || !city || !state || !zip || !country) {
+			alert('Please fill in all shipping information.');
+			return;
+		}
+
+		if (!imageId) {
+			alert('Please generate an image first.');
+			return;
+		}
 
 		try {
-			const response = await fetch('/api/ask', {
+			// Create payment intent
+			const response = await fetch('/api/create-payment-intent', {
 				method: 'POST',
-				body: formData
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					imageId,
+					name,
+					address,
+					city,
+					state,
+					zip,
+					country
+				})
 			});
-			type Result = {
-				description: string;
-			};
-			const result: Result = await response.json();
-			description = result.description; // Store the description from the response
+
+			const data = await response.json() as { clientSecret: string };
+			clientSecret = data.clientSecret;
+
+			// Initialize Stripe elements
+			if (stripe && clientSecret) {
+				elements = stripe.elements({ clientSecret });
+				cardElement = elements.create('payment');
+				cardElement.mount('#card-element');
+			}
+
+			step = 'checkout';
 		} catch (error) {
-			console.error('Error submitting form:', error);
-			description = 'An error occurred while processing your request.';
-		} finally {
-			isLoading = false;
+			console.error('Error creating payment intent:', error);
+			alert('Failed to initialize checkout. Please try again.');
 		}
+	};
+
+	const handlePayment = async () => {
+		if (!stripe || !elements) {
+			return;
+		}
+
+		isProcessingPayment = true;
+
+		try {
+			const { error } = await stripe.confirmPayment({
+				elements,
+				confirmParams: {
+					return_url: window.location.origin + '/success',
+				},
+				redirect: 'if_required'
+			});
+
+			if (error) {
+				alert(error.message);
+			} else {
+				step = 'complete';
+			}
+		} catch (error) {
+			console.error('Payment error:', error);
+			alert('Payment failed. Please try again.');
+		} finally {
+			isProcessingPayment = false;
+		}
+	};
+
+	const startOver = () => {
+		prompt = '';
+		generatedImage = null;
+		guitarPickPreview = null;
+		imageId = null;
+		step = 'generate';
+		name = '';
+		address = '';
+		city = '';
+		state = '';
+		zip = '';
+		country = 'United States';
 	};
 </script>
 
 <div class="container">
-	<h1>Floor is Llava</h1>
-	<div
-		class="upload-area {isDragging ? 'dragging' : ''}"
-		role="button"
-		tabindex="0"
-		on:drop={handleDrop}
-		on:dragover={handleDragOver}
-		on:dragleave={handleDragLeave}
-		on:click={() => document.getElementById('file-input')?.click()}
-		on:keydown={handleKeyDown}
-		aria-label="Upload Area: Drag & Drop Image or Click to Upload"
-	>
-		<input
-			type="file"
-			accept="image/*"
-			on:change={handleFileUpload}
-			style="display: none;"
-			id="file-input"
-		/>
-		{#if imageUrl}
-			<img src={imageUrl} alt="Upload preview" />
-		{:else}
-			<label for="file-input">Drag & Drop Image or Click to Upload</label>
-		{/if}
-	</div>
-	<input
-		type="text"
-		class="question-input"
-		placeholder="Ask a question about the photo..."
-		bind:value={question}
-	/>
-	<button class="submit-button" on:click={submitForm}>Submit</button>
-	{#if isLoading}
-		<div class="loading-indicator">Processing your request...</div>
+	<h1>Custom Guitar Pick Creator</h1>
+	<p class="subtitle">Generate AI art and get it printed on a guitar pick, mailed to you!</p>
+
+	{#if step === 'generate'}
+		<div class="step">
+			<h2>Step 1: Generate Your Image</h2>
+			<div class="prompt-section">
+				<textarea
+					class="prompt-input"
+					placeholder="Describe the image you want on your guitar pick (e.g., 'a purple dragon with flames')"
+					bind:value={prompt}
+					rows="4"
+				></textarea>
+				<button class="btn-primary" on:click={generateImage} disabled={isGenerating}>
+					{isGenerating ? 'Generating...' : 'Generate Image'}
+				</button>
+			</div>
+		</div>
 	{/if}
-	{#if description}
-		<div class="description">{description}</div>
+
+	{#if step === 'preview'}
+		<div class="step">
+			<h2>Step 2: Preview Your Guitar Pick</h2>
+			<div class="preview-section">
+				{#if guitarPickPreview}
+					<img src={guitarPickPreview} alt="Guitar pick preview" class="guitar-pick-preview" />
+				{/if}
+				<div class="preview-actions">
+					<button class="btn-secondary" on:click={startOver}>Start Over</button>
+				</div>
+			</div>
+
+			<div class="shipping-form">
+				<h3>Shipping Information</h3>
+				<input type="text" placeholder="Full Name" bind:value={name} />
+				<input type="text" placeholder="Street Address" bind:value={address} />
+				<div class="form-row">
+					<input type="text" placeholder="City" bind:value={city} />
+					<input type="text" placeholder="State/Province" bind:value={state} />
+				</div>
+				<div class="form-row">
+					<input type="text" placeholder="ZIP/Postal Code" bind:value={zip} />
+					<input type="text" placeholder="Country" bind:value={country} />
+				</div>
+				<button class="btn-primary" on:click={proceedToCheckout}>
+					Proceed to Checkout ($9.99)
+				</button>
+			</div>
+		</div>
 	{/if}
+
+	{#if step === 'checkout'}
+		<div class="step">
+			<h2>Step 3: Payment</h2>
+			<div class="checkout-section">
+				<div class="order-summary">
+					<h3>Order Summary</h3>
+					<p>Custom Guitar Pick: $9.99</p>
+					<p>Shipping: Free</p>
+					<p class="total">Total: $9.99</p>
+				</div>
+				
+				<div class="payment-form">
+					<div id="card-element"></div>
+					<button class="btn-primary" on:click={handlePayment} disabled={isProcessingPayment}>
+						{isProcessingPayment ? 'Processing...' : 'Pay $9.99'}
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	{#if step === 'complete'}
+		<div class="step">
+			<h2>Order Complete!</h2>
+			<div class="success-message">
+				<p>✓ Your payment was successful!</p>
+				<p>Your custom guitar pick will be mailed to:</p>
+				<address>
+					{name}<br />
+					{address}<br />
+					{city}, {state} {zip}<br />
+					{country}
+				</address>
+				<p>You should receive it within 7-10 business days.</p>
+				<button class="btn-primary" on:click={startOver}>Create Another</button>
+			</div>
+		</div>
+	{/if}
+
 	<div class="footer">
 		<p>
 			Built with 🧡 on <a href="https://developers.cloudflare.com/workers-ai/" target="_blank"
 				>Workers AI</a
 			>
 		</p>
-		<p>
-			Learn more about <a
-				href="https://developers.cloudflare.com/workers-ai/privacy/"
-				target="_blank">Cloudflare AI data and privacy</a
-			>
-		</p>
-		<p>
-			👀 the <a
-				href="https://github.com/craigsdennis/floor-is-llava-workers-ai"
-				target="_blank">Workers AI code</a
-			>
-		</p>
-
+		<p>Powered by Stripe for secure payments</p>
 	</div>
 </div>
 
 <style>
 	.container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		margin-top: 60px;
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 20px;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 	}
 
 	h1 {
 		color: #0070f3;
+		text-align: center;
+		margin-bottom: 10px;
 	}
 
-	.upload-area {
-		width: 400px;
-		height: 300px;
-		border: 3px dashed #ccc;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		margin-bottom: 30px;
-		transition: background-color 0.3s;
-		cursor: pointer;
-		font-size: 20px;
-	}
-
-	.upload-area.dragging {
-		background-color: #e0e0e0;
-	}
-
-	.upload-area img {
-		max-width: 100%;
-		max-height: 100%;
-		display: block;
-	}
-
-	.question-input {
-		width: 400px;
-		padding: 15px;
-		margin-bottom: 30px;
+	.subtitle {
+		text-align: center;
+		color: #666;
 		font-size: 18px;
+		margin-bottom: 40px;
 	}
 
-	.submit-button {
+	.step {
+		background: white;
+		border-radius: 8px;
+		padding: 30px;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		margin-bottom: 30px;
+	}
+
+	h2 {
+		color: #333;
+		margin-bottom: 20px;
+	}
+
+	h3 {
+		color: #333;
+		margin-bottom: 15px;
+	}
+
+	.prompt-section {
+		display: flex;
+		flex-direction: column;
+		gap: 15px;
+	}
+
+	.prompt-input {
+		width: 100%;
+		padding: 15px;
+		font-size: 16px;
+		border: 2px solid #ddd;
+		border-radius: 5px;
+		resize: vertical;
+		font-family: inherit;
+	}
+
+	.prompt-input:focus {
+		outline: none;
+		border-color: #0070f3;
+	}
+
+	.btn-primary {
 		padding: 15px 30px;
 		background-color: #0070f3;
 		color: white;
@@ -221,36 +408,138 @@
 		border-radius: 5px;
 		cursor: pointer;
 		font-size: 18px;
+		font-weight: 600;
+		transition: background-color 0.2s;
 	}
 
-	.submit-button:hover {
+	.btn-primary:hover:not(:disabled) {
 		background-color: #005bb5;
 	}
 
-	.loading-indicator {
-		margin-top: 30px;
-		font-size: 18px;
-		color: #0070f3;
+	.btn-primary:disabled {
+		background-color: #ccc;
+		cursor: not-allowed;
 	}
 
-	.description {
-		margin-top: 30px;
+	.btn-secondary {
+		padding: 10px 20px;
+		background-color: #666;
+		color: white;
+		border: none;
+		border-radius: 5px;
+		cursor: pointer;
+		font-size: 16px;
+		transition: background-color 0.2s;
+	}
+
+	.btn-secondary:hover {
+		background-color: #444;
+	}
+
+	.preview-section {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 20px;
+		margin-bottom: 30px;
+	}
+
+	.guitar-pick-preview {
+		max-width: 300px;
+		border-radius: 10px;
+		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+	}
+
+	.preview-actions {
+		display: flex;
+		gap: 15px;
+	}
+
+	.shipping-form {
+		display: flex;
+		flex-direction: column;
+		gap: 15px;
+	}
+
+	.shipping-form input {
+		padding: 12px;
+		font-size: 16px;
+		border: 2px solid #ddd;
+		border-radius: 5px;
+	}
+
+	.shipping-form input:focus {
+		outline: none;
+		border-color: #0070f3;
+	}
+
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 15px;
+	}
+
+	.checkout-section {
+		display: flex;
+		flex-direction: column;
+		gap: 30px;
+	}
+
+	.order-summary {
+		background: #f5f5f5;
+		padding: 20px;
+		border-radius: 5px;
+	}
+
+	.order-summary p {
+		margin: 10px 0;
+		font-size: 16px;
+	}
+
+	.order-summary .total {
 		font-size: 20px;
 		font-weight: bold;
-		padding: 20px;
-		border: 3px solid #0070f3;
-		border-radius: 5px;
-		background-color: #e0f7fa;
 		color: #0070f3;
-		max-width: 80%;
+		border-top: 2px solid #ddd;
+		padding-top: 10px;
+		margin-top: 10px;
+	}
+
+	.payment-form {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	#card-element {
+		padding: 15px;
+		border: 2px solid #ddd;
+		border-radius: 5px;
+	}
+
+	.success-message {
 		text-align: center;
+		padding: 20px;
+	}
+
+	.success-message p {
+		font-size: 18px;
+		margin: 15px 0;
+	}
+
+	.success-message address {
+		font-style: normal;
+		background: #f5f5f5;
+		padding: 15px;
+		border-radius: 5px;
+		margin: 20px 0;
 	}
 
 	.footer {
 		margin-top: 60px;
 		text-align: center;
-		font-size: 16px;
-		color: #555;
+		font-size: 14px;
+		color: #666;
 	}
 
 	.footer p {
