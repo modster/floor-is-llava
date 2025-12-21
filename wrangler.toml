@@ -1,14 +1,15 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "floor-is-llava"
-compatibility_date = "2024-05-12"
+compatibility_date = "2025-12-20"
+compatibility_flags = [ "nodejs_compat" ]
 pages_build_output_dir = ".svelte-kit/cloudflare"
 
 # Automatically place your workloads in an optimal location to minimize latency.
 # If you are running back-end logic in a Pages Function, running it closer to your back-end infrastructure
 # rather than the end user may result in better performance.
 # Docs: https://developers.cloudflare.com/pages/functions/smart-placement/#smart-placement
-# [placement]
-# mode = "smart"
+[placement]
+mode = "smart"
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Docs:
@@ -16,7 +17,7 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 # Note: Use secrets to store sensitive data.
 # - https://developers.cloudflare.com/pages/functions/bindings/#secrets
 [vars]
-STRIPE_PUBLISHABLE_KEY = "pk_test_placeholder"
+STRIPE_PUBLISHABLE_KEY = "pk_test_51SgL0WPIX8FoWJzjVv48VHOqsR0KkOhJJLQsRLQ665k12vZfjojboansM7AjBNGDvBlDOI6oZQKZRNZBDqaUoDG200qcryERIY"
 # Set STRIPE_SECRET_KEY as a secret using: wrangler secret put STRIPE_SECRET_KEY
 # Set STRIPE_WEBHOOK_SECRET as a secret using: wrangler secret put STRIPE_WEBHOOK_SECRET
 
@@ -31,10 +32,9 @@ binding = "IMAGES_BUCKET"
 bucket_name = "guitar-pick-images"
 
 # Bind a KV Namespace for order tracking
-# Replace "placeholder" with actual KV namespace ID from: wrangler kv:namespace create ORDERS_KV
 [[kv_namespaces]]
 binding = "ORDERS_KV"
-id = "placeholder"
+id = "63e93e6581c744dc97494f54654d123f"
 
 # Bind a D1 database. D1 is Cloudflare’s native serverless SQL database.
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#d1-databases
