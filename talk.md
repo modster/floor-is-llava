@@ -21,6 +21,6 @@
 - [ ] Demo
 - [ ] Code
 - [ ] Use it!
-- [ ] The floor is llava. 
+- [ ] The floor is llava.
 - [ ] Build stuff. Share it with the world, or at least with me!
 - [ ] What are you going to build?

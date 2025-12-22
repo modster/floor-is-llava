@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
-	
+
 	export let data: PageData;
-	
+
 	// State variables
 	let prompt: string = '';
-	let generatedImage: string | null = null;
+
 	let guitarPickPreview: string | null = null;
 	let imageId: string | null = null;
 	let isGenerating: boolean = false;
 	let isProcessingPayment: boolean = false;
 	let step: 'generate' | 'preview' | 'checkout' | 'complete' = 'generate';
-	
+
 	// Shipping information
 	let name: string = '';
 	let address: string = '';
@@ -20,10 +20,13 @@
 	let state: string = '';
 	let zip: string = '';
 	let country: string = 'United States';
-	
+
 	// Stripe
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let stripe: any = null;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let elements: any = null;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let cardElement: any = null;
 	let clientSecret: string | null = null;
 
@@ -33,6 +36,7 @@
 			const script = document.createElement('script');
 			script.src = 'https://js.stripe.com/v3/';
 			script.onload = () => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				stripe = (window as any).Stripe(data.stripePublishableKey);
 			};
 			document.head.appendChild(script);
@@ -60,11 +64,10 @@
 			}
 
 			const blob = await response.blob();
-			generatedImage = URL.createObjectURL(blob);
-			
+
 			// Create guitar pick preview
 			await createGuitarPickPreview(blob);
-			
+
 			step = 'preview';
 		} catch (error) {
 			console.error('Error generating image:', error);
@@ -109,7 +112,7 @@
 
 		// Draw image centered and scaled to fit
 		const size = 160;
-		ctx.drawImage(img, 150 - size/2, 120 - size/2, size, size);
+		ctx.drawImage(img, 150 - size / 2, 120 - size / 2, size, size);
 
 		ctx.restore();
 
@@ -128,7 +131,7 @@
 		// Convert to blob and upload to server
 		canvas.toBlob(async (blob) => {
 			if (!blob) return;
-			
+
 			guitarPickPreview = canvas.toDataURL();
 
 			// Upload to server
@@ -141,7 +144,7 @@
 					body: formData
 				});
 
-				const result = await response.json() as { imageId: string };
+				const result = (await response.json()) as { imageId: string };
 				imageId = result.imageId;
 			} catch (error) {
 				console.error('Error uploading guitar pick:', error);
@@ -178,7 +181,7 @@
 				})
 			});
 
-			const data = await response.json() as { clientSecret: string };
+			const data = (await response.json()) as { clientSecret: string };
 			clientSecret = data.clientSecret;
 
 			// Initialize Stripe elements
@@ -206,7 +209,7 @@
 			const { error } = await stripe.confirmPayment({
 				elements,
 				confirmParams: {
-					return_url: window.location.origin + '/success',
+					return_url: window.location.origin + '/success'
 				},
 				redirect: 'if_required'
 			});
@@ -226,7 +229,7 @@
 
 	const startOver = () => {
 		prompt = '';
-		generatedImage = null;
+
 		guitarPickPreview = null;
 		imageId = null;
 		step = 'generate';
@@ -301,7 +304,7 @@
 					<p>Shipping: Free</p>
 					<p class="total">Total: $9.99</p>
 				</div>
-				
+
 				<div class="payment-form">
 					<div id="card-element"></div>
 					<button class="btn-primary" on:click={handlePayment} disabled={isProcessingPayment}>
@@ -321,7 +324,8 @@
 				<address>
 					{name}<br />
 					{address}<br />
-					{city}, {state} {zip}<br />
+					{city}, {state}
+					{zip}<br />
 					{country}
 				</address>
 				<p>You should receive it within 7-10 business days.</p>
@@ -345,7 +349,8 @@
 		max-width: 800px;
 		margin: 0 auto;
 		padding: 20px;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+			sans-serif;
 	}
 
 	h1 {

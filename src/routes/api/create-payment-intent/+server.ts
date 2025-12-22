@@ -3,7 +3,7 @@ import type { RequestEvent, RequestHandler } from './$types';
 import Stripe from 'stripe';
 
 export const POST: RequestHandler = async ({ request, platform }: RequestEvent) => {
-	const data = await request.json() as {
+	const data = (await request.json()) as {
 		imageId: string;
 		name: string;
 		address: string;
@@ -13,14 +13,14 @@ export const POST: RequestHandler = async ({ request, platform }: RequestEvent) 
 		country: string;
 	};
 	const { imageId, name, address, city, state, zip, country } = data;
-	
+
 	if (!imageId || !name || !address || !city || !state || !zip || !country) {
 		return error(400, { message: 'All fields are required' });
 	}
 
 	try {
 		const stripe = new Stripe(platform?.env.STRIPE_SECRET_KEY || '', {
-			apiVersion: '2025-11-17.clover',
+			apiVersion: '2025-11-17.clover'
 		});
 
 		// Create a payment intent for $9.99 (price in cents)

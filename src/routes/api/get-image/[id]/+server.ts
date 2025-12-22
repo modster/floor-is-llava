@@ -3,7 +3,7 @@ import type { RequestEvent, RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, platform }: RequestEvent) => {
 	const imageId = params.id;
-	
+
 	if (!imageId) {
 		return error(400, { message: 'Image ID is required' });
 	}

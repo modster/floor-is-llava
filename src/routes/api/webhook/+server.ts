@@ -4,14 +4,14 @@ import Stripe from 'stripe';
 
 export const POST: RequestHandler = async ({ request, platform }: RequestEvent) => {
 	const signature = request.headers.get('stripe-signature');
-	
+
 	if (!signature) {
 		return error(400, { message: 'Missing stripe-signature header' });
 	}
 
 	try {
 		const stripe = new Stripe(platform?.env.STRIPE_SECRET_KEY || '', {
-			apiVersion: '2025-11-17.clover',
+			apiVersion: '2025-11-17.clover'
 		});
 
 		const body = await request.text();
@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request, platform }: RequestEvent) 
 		switch (event.type) {
 			case 'payment_intent.succeeded': {
 				const paymentIntent = event.data.object as Stripe.PaymentIntent;
-				
+
 				// Store order in KV
 				const orderId = crypto.randomUUID();
 				const orderData = {
@@ -42,10 +42,7 @@ export const POST: RequestHandler = async ({ request, platform }: RequestEvent) 
 					createdAt: new Date().toISOString()
 				};
 
-				await platform?.env.ORDERS_KV.put(
-					orderId,
-					JSON.stringify(orderData)
-				);
+				await platform?.env.ORDERS_KV.put(orderId, JSON.stringify(orderData));
 
 				console.log('Order created:', orderId);
 				break;

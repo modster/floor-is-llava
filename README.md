@@ -30,12 +30,14 @@ A Cloudflare Workers site that generates AI art and prints it on custom guitar p
 ### Installation
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/modster/floor-is-llava.git
 cd floor-is-llava
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 ```
@@ -43,12 +45,14 @@ npm install
 3. Set up Cloudflare resources (R2 bucket, KV namespace) - See [SETUP.md](./SETUP.md) for detailed instructions
 
 4. Configure Stripe keys in `wrangler.toml` and set secrets:
+
 ```bash
 wrangler secret put STRIPE_SECRET_KEY
 wrangler secret put STRIPE_WEBHOOK_SECRET
 ```
 
 5. Deploy to Cloudflare Pages
+
 ```bash
 npm run deploy
 ```
@@ -56,6 +60,7 @@ npm run deploy
 ## Configuration
 
 See [SETUP.md](./SETUP.md) for complete setup instructions including:
+
 - Creating Cloudflare resources (R2, KV)
 - Configuring Stripe integration
 - Setting environment variables and secrets
@@ -64,21 +69,25 @@ See [SETUP.md](./SETUP.md) for complete setup instructions including:
 ## Development
 
 Run the development server:
+
 ```bash
 npm run dev
 ```
 
 Build for production:
+
 ```bash
 npm run build
 ```
 
 Run type checking:
+
 ```bash
 npm run check
 ```
 
 Run linting:
+
 ```bash
 npm run lint
 ```
@@ -140,8 +149,8 @@ This project is open source and available under the MIT License.
 ## Support
 
 For questions or issues:
+
 - Check the [SETUP.md](./SETUP.md) for configuration help
 - Review [Cloudflare Workers AI docs](https://developers.cloudflare.com/workers-ai/)
 - Consult [Stripe documentation](https://stripe.com/docs)
 - Open an issue on GitHub
-

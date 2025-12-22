@@ -7,6 +7,7 @@ This application allows users to generate AI art and get it printed on a guitar 
 Before deploying this application, you'll need:
 
 1. A Cloudflare account with:
+
    - Workers AI enabled
    - R2 storage access
    - KV namespace access
@@ -19,11 +20,13 @@ Before deploying this application, you'll need:
 ### 1. Create Cloudflare Resources
 
 #### Create an R2 Bucket
+
 ```bash
 wrangler r2 bucket create guitar-pick-images
 ```
 
 #### Create a KV Namespace
+
 ```bash
 # For production
 wrangler kv:namespace create ORDERS_KV
@@ -129,11 +132,13 @@ Or connect your repository to Cloudflare Pages:
 ## Environment Variables and Secrets
 
 ### Public Variables (in wrangler.toml)
-- `STRIPE_PUBLISHABLE_KEY` - Your Stripe publishable key (pk_test_... or pk_live_...)
+
+- `STRIPE_PUBLISHABLE_KEY` - Your Stripe publishable key (pk*test*... or pk*live*...)
 
 ### Secrets (set via wrangler secret put)
-- `STRIPE_SECRET_KEY` - Your Stripe secret key (sk_test_... or sk_live_...)
-- `STRIPE_WEBHOOK_SECRET` - Your Stripe webhook signing secret (whsec_...)
+
+- `STRIPE_SECRET_KEY` - Your Stripe secret key (sk*test*... or sk*live*...)
+- `STRIPE_WEBHOOK_SECRET` - Your Stripe webhook signing secret (whsec\_...)
 
 ## Local Development
 
@@ -151,21 +156,22 @@ After payment is successful, order details are stored in the KV namespace with t
 
 ```json
 {
-  "orderId": "uuid",
-  "paymentIntentId": "pi_xxx",
-  "imageId": "uuid",
-  "name": "Customer Name",
-  "address": "Street Address",
-  "city": "City",
-  "state": "State",
-  "zip": "12345",
-  "country": "United States",
-  "status": "paid",
-  "createdAt": "2024-01-01T00:00:00.000Z"
+	"orderId": "uuid",
+	"paymentIntentId": "pi_xxx",
+	"imageId": "uuid",
+	"name": "Customer Name",
+	"address": "Street Address",
+	"city": "City",
+	"state": "State",
+	"zip": "12345",
+	"country": "United States",
+	"status": "paid",
+	"createdAt": "2024-01-01T00:00:00.000Z"
 }
 ```
 
 You'll need to implement a separate system to:
+
 1. Fetch paid orders from KV
 2. Retrieve the guitar pick images from R2
 3. Send to a print-on-demand service
@@ -173,7 +179,7 @@ You'll need to implement a separate system to:
 
 ## Production Checklist
 
-- [ ] Update Stripe keys to live mode (pk_live_... and sk_live_...)
+- [ ] Update Stripe keys to live mode (pk*live*... and sk*live*...)
 - [ ] Configure production webhook endpoint in Stripe
 - [ ] Set up order fulfillment process
 - [ ] Test the complete flow end-to-end
@@ -192,6 +198,7 @@ Current price is set to $9.99 USD. To change the price, update:
 ## Support
 
 For issues with:
+
 - Cloudflare services: https://developers.cloudflare.com/
 - Stripe integration: https://stripe.com/docs
 - SvelteKit: https://kit.svelte.dev/docs
